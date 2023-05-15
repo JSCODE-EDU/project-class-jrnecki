@@ -22,6 +22,10 @@ public class PostService {
         Optional<Post> post = springDataJpaPostRepository.findById(id);
         return post.map(value -> new PostDto(value.getId(), value.getTitle(), value.getContent())).orElse(null);
     }
+    public PostDto getPostByTitle(String title){
+        Optional<Post> post = springDataJpaPostRepository.findByTitle(title);
+        return post.map(value -> new PostDto(value.getId(), value.getTitle(), value.getContent())).orElse(null);
+    }
 
     public PostDto addPost(PostDto postDto){
         Post post = new Post();

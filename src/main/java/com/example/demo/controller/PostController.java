@@ -22,6 +22,10 @@ public class PostController {
 
         return  ResponseEntity.status(HttpStatus.OK).body(postService.getPost(id));
     }
+    @GetMapping("/title/{title}")
+    public ResponseEntity<PostDto> getPost(@PathVariable String title){
+        return  ResponseEntity.status(HttpStatus.OK).body(postService.getPostByTitle(title));
+    }
 @GetMapping("/all")
     public ResponseEntity<List<PostDto>> getAllPost(){
         return ResponseEntity.status(HttpStatus.OK).body(postService.getAllPosts());
