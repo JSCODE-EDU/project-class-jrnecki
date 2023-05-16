@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -20,7 +21,22 @@ public class PostService {
 
     public PostDto getPost(long id){
         Optional<Post> post = springDataJpaPostRepository.findById(id);
-        return post.map(value -> new PostDto(value.getId(), value.getTitle(), value.getContent())).orElse(null);
+        return post.map(value -> new PostDto(value.getId(), value.getTitle(), value.getContent(),value.getCreatedAt(),value.getUpdatedAt())).orElse(null);
+    }
+    /*
+    키워드가 포함 된 제목 전부 조회
+    최신순
+     조회 개수 최대 100개
+     */
+    public List<PostDto> getPostByTitle(String title) {
+        List<Post> posts = springDataJpaPostRepository.findTop100ByTitleContainingOrderByCreatedAtDesc(title);
+        List<PostDto> postDtos = new ArrayList<>();
+        posts.forEach(
+                post -> {
+                    postDtos.add(new PostDto(post.getId(),post.getTitle(),post.getContent(),post.getCreatedAt(),post.getUpdatedAt()));
+                }
+        );
+        return postDtos;
     }
 
     public PostDto addPost(PostDto postDto){
@@ -29,14 +45,21 @@ public class PostService {
         post.setContent(postDto.getContent());
 
         Post savedPost = springDataJpaPostRepository.save(post);
-        return new PostDto(savedPost.getId(),savedPost.getTitle(),savedPost.getContent());
+        return new PostDto(savedPost.getId(),savedPost.getTitle(),savedPost.getContent(),savedPost.getCreatedAt(),savedPost.getUpdatedAt());
     }
 
+    /*
+    전체 조회
+    최신순
+    조회 개수 최대 100
+    */
     public List<PostDto> getAllPosts(){
-        List<Post> posts = springDataJpaPostRepository.findAll();
-       List<PostDto> postDtos = new ArrayList<>();
+         List<Post> posts = springDataJpaPostRepository.findTop100ByOrderByCreatedAtDesc();
+        List<PostDto> postDtos = new ArrayList<>();
        posts.forEach(
-               post -> postDtos.add(new PostDto(post.getId(),post.getTitle(),post.getContent()))
+              post -> {
+                  postDtos.add(new PostDto(post.getId(),post.getTitle(),post.getContent(),post.getCreatedAt(),post.getUpdatedAt()));
+              }
        );
        return postDtos;
     }
@@ -46,9 +69,10 @@ public class PostService {
                 .orElseThrow(()-> new IllegalArgumentException("Threre is no post id: "+id));
         post.setTitle(postDto.getTitle());
         post.setContent(postDto.getContent());
+        post.setUpdatedAt(post.getUpdatedAt());
 
         Post updatedPost = springDataJpaPostRepository.save(post); // 디비에 저장
-        return new PostDto(updatedPost.getId(), updatedPost.getTitle(), updatedPost.getContent()); // dto 형태로 반환
+        return new PostDto(updatedPost.getId(), updatedPost.getTitle(), updatedPost.getContent(),updatedPost.getCreatedAt(),updatedPost.getUpdatedAt()); // dto 형태로 반환
     }
 
     public void deletePost(long id) {
