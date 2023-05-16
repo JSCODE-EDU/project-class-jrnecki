@@ -22,9 +22,9 @@ public class PostController {
 
         return  ResponseEntity.status(HttpStatus.OK).body(postService.getPost(id));
     }
-    @GetMapping("/title/{title}")
-    public ResponseEntity<PostDto> getPost(@PathVariable String title){
-        return  ResponseEntity.status(HttpStatus.OK).body(postService.getPostByTitle(title));
+    @GetMapping("/title")
+    public ResponseEntity<List<PostDto>> getPostByKeyword(@RequestParam("keyword") String keyword){
+        return  ResponseEntity.status(HttpStatus.OK).body(postService.getPostByTitle(keyword));
     }
 @GetMapping("/all")
     public ResponseEntity<List<PostDto>> getAllPost(){
