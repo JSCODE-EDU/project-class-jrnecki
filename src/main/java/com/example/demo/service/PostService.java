@@ -8,7 +8,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -75,8 +74,12 @@ public class PostService {
         return new PostDto(updatedPost.getId(), updatedPost.getTitle(), updatedPost.getContent(),updatedPost.getCreatedAt(),updatedPost.getUpdatedAt()); // dto 형태로 반환
     }
 
-    public void deletePost(long id) {
-        springDataJpaPostRepository.deleteById( id);
+    public Optional<PostDto> deletePost(long id) {
+        return springDataJpaPostRepository.findById(id)
+                .map(op ->{
+                    springDataJpaPostRepository.deleteById(id);
+                    return new PostDto(op.getId(),op.getTitle(),op.getContent(),op.getCreatedAt(),op.getUpdatedAt());
+                });
     }
 }
 
