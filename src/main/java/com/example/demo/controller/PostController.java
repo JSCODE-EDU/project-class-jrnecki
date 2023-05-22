@@ -1,13 +1,21 @@
 package com.example.demo.controller;
 
 import com.example.demo.dto.PostDto;
+import com.example.demo.entity.Post;
 import com.example.demo.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.ObjectError;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.swing.text.html.parser.Entity;
+import javax.validation.Valid;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 
 @RestController
@@ -27,12 +35,20 @@ public class PostController {
         return  ResponseEntity.status(HttpStatus.OK).body(postService.getPostByTitle(keyword));
     }
 @GetMapping("/all")
-    public ResponseEntity<List<PostDto>> getAllPost(){
+    public @Valid ResponseEntity<List<PostDto>> getAllPost(){
         return ResponseEntity.status(HttpStatus.OK).body(postService.getAllPosts());
 }
     @PostMapping("/new")
-    public ResponseEntity <PostDto> createPost(@RequestBody PostDto postDto){
-        return ResponseEntity.status(HttpStatus.OK).body(postService.addPost(postDto));
+    public ResponseEntity <?> createPost(@Valid @RequestBody PostDto postDto, BindingResult bindingResult){
+        if(bindingResult.hasErrors()){
+             List<String> errors = new ArrayList<>();
+            bindingResult.getAllErrors().forEach(error ->{
+                 errors.add(error.getDefaultMessage());
+             });
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+        }else {
+            return ResponseEntity.status(HttpStatus.OK).body(postService.addPost(postDto));
+        }
     }
     @PutMapping("/edit/{id}")
     public ResponseEntity<PostDto> editPost(@PathVariable Long id, @RequestBody PostDto postDto){
@@ -40,8 +56,12 @@ public class PostController {
     }
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deletePost(@PathVariable long  id){
-        postService.deletePost(id);
-        return ResponseEntity.status(HttpStatus.OK).body("삭제되었습니다.");
+        Optional<PostDto> optionalPostDto = postService.deletePost(id);
+        if(optionalPostDto.isPresent()){
+            return ResponseEntity.status(HttpStatus.OK).body("Has been deleted.");
+        }else{
+            return  ResponseEntity.status(HttpStatus.NOT_FOUND).body("Check id. This post does not exist.");
+        }
         }
     }
 
