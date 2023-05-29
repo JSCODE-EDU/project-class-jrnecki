@@ -1,4 +1,5 @@
 package com.example.demo.service;
+import com.example.demo.Exception.DomainErrorCode;
 import com.example.demo.dto.PostDto;
 import com.example.demo.entity.Post;
 import com.example.demo.repository.SpringDataJpaPostRepository;
@@ -23,52 +24,42 @@ public class PostService {
     }
 
     public Page<PostDto> getAllPosts(Pageable pageable){
-        Optional<Page<Post>> posts = springDataJpaPostRepository.findAllByOrderByIdDesc(pageable);
-        if(posts.isPresent()){
-           return posts.map(post -> post.map(PostDto :: toDto)).orElse(Page.empty());
-        }
-        return Page.empty();
+        var posts=springDataJpaPostRepository.findAllByOrderByIdDesc(pageable);
+        return   posts.map(post -> post.map(PostDto :: toDto))
+                .orElseThrow(DomainErrorCode.NO_POST::create);
     }
     
     public PostDto getPost(long id){
         Optional<Post> post = springDataJpaPostRepository.findById(id);
-        if(post.isPresent()){
-            return PostDto.toDto(post.get());
-        }else{
-            throw new RuntimeException("no post");
-        }
+        return post.map(PostDto::toDto) .orElseThrow(DomainErrorCode.NO_POST::create);
     }
 
     public Page<PostDto> getPostByTitle(String keyword, Pageable pageable) {
-        Optional<Page<Post>> posts = springDataJpaPostRepository.findByTitleContaining(pageable, keyword);
-        if(posts.isPresent()){
-            return posts.map(post -> post.map(PostDto :: toDto)).orElse(Page.empty());
-        }
-        return Page.empty();
+        var posts = springDataJpaPostRepository.findByTitleContaining(pageable,keyword);
+
+        return posts.map(post -> post.map(PostDto :: toDto))
+                .orElseThrow(DomainErrorCode.NO_POST::create);
     }
 
     public long addPost(PostDto postDto){
-        Post post = Post.toEntity(postDto);
-        springDataJpaPostRepository.save(post);
-        return post.getId();
+        var newPost = Post.toEntity(postDto);
+        springDataJpaPostRepository.save(newPost);
+
+        return newPost.getId();
     }
 
     public long  updatePost(long id, PostDto postDto){
-        Post post = springDataJpaPostRepository.findById(id)
-                .orElseThrow(()-> new IllegalArgumentException("Threre is no post id: "+id));
-        post.setTitle(postDto.getTitle());
-        post.setContent(postDto.getContent());
-        post.setUpdatedAt(post.getUpdatedAt());
+        var beforePost = springDataJpaPostRepository.findById(id)
+                .orElseThrow(DomainErrorCode.POST_ID_ERROR::create);
+        beforePost.update(postDto.getTitle(), postDto.getContent(), postDto.getUpdatedAt());
+
         return id;
     }
 
-    public String deletePost(long id) {
-        Optional<Post> post = springDataJpaPostRepository.findById(id);
-        if(post.isEmpty()){
-            throw new IllegalStateException("없는 포스트..");
-        }
+    public void  deletePost(long id) {
+        var post = springDataJpaPostRepository.findById(id)
+                .orElseThrow(DomainErrorCode.POST_ID_ERROR::create);
         springDataJpaPostRepository.deleteById(id);
-        return "has been deleted";
     }
 }
 
