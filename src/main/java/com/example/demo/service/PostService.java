@@ -2,13 +2,17 @@ package com.example.demo.service;
 import com.example.demo.dto.PostDto;
 import com.example.demo.entity.Post;
 import com.example.demo.repository.SpringDataJpaPostRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
+/*
+   요구사항 의도에 더 적합하게
+   pageable 이용하는 것으로 변경
 
+   2023.06.25
+   */
 @Service
 @Transactional
 public class PostService {
@@ -18,68 +22,53 @@ public class PostService {
         this.springDataJpaPostRepository = springDataJpaPostRepository;
     }
 
+    public Page<PostDto> getAllPosts(Pageable pageable){
+        Optional<Page<Post>> posts = springDataJpaPostRepository.findAllByOrderByIdDesc(pageable);
+        if(posts.isPresent()){
+           return posts.map(post -> post.map(PostDto :: toDto)).orElse(Page.empty());
+        }
+        return Page.empty();
+    }
+    
     public PostDto getPost(long id){
         Optional<Post> post = springDataJpaPostRepository.findById(id);
-        return post.map(value -> new PostDto(value.getId(), value.getTitle(), value.getContent(),value.getCreatedAt(),value.getUpdatedAt())).orElse(null);
-    }
-    /*
-    키워드가 포함 된 제목 전부 조회
-    최신순
-     조회 개수 최대 100개
-     */
-    public List<PostDto> getPostByTitle(String title) {
-        List<Post> posts = springDataJpaPostRepository.findTop100ByTitleContainingOrderByCreatedAtDesc(title);
-        List<PostDto> postDtos = new ArrayList<>();
-        posts.forEach(
-                post -> {
-                    postDtos.add(new PostDto(post.getId(),post.getTitle(),post.getContent(),post.getCreatedAt(),post.getUpdatedAt()));
-                }
-        );
-        return postDtos;
+        if(post.isPresent()){
+            return PostDto.toDto(post.get());
+        }else{
+            throw new RuntimeException("no post");
+        }
     }
 
-    public PostDto addPost(PostDto postDto){
-        Post post = new Post();
-        post.setTitle(postDto.getTitle());
-        post.setContent(postDto.getContent());
-
-        Post savedPost = springDataJpaPostRepository.save(post);
-        return new PostDto(savedPost.getId(),savedPost.getTitle(),savedPost.getContent(),savedPost.getCreatedAt(),savedPost.getUpdatedAt());
+    public Page<PostDto> getPostByTitle(String keyword, Pageable pageable) {
+        Optional<Page<Post>> posts = springDataJpaPostRepository.findByTitleContaining(pageable, keyword);
+        if(posts.isPresent()){
+            return posts.map(post -> post.map(PostDto :: toDto)).orElse(Page.empty());
+        }
+        return Page.empty();
     }
 
-    /*
-    전체 조회
-    최신순
-    조회 개수 최대 100
-    */
-    public List<PostDto> getAllPosts(){
-         List<Post> posts = springDataJpaPostRepository.findTop100ByOrderByCreatedAtDesc();
-        List<PostDto> postDtos = new ArrayList<>();
-       posts.forEach(
-              post -> {
-                  postDtos.add(new PostDto(post.getId(),post.getTitle(),post.getContent(),post.getCreatedAt(),post.getUpdatedAt()));
-              }
-       );
-       return postDtos;
+    public long addPost(PostDto postDto){
+        Post post = Post.toEntity(postDto);
+        springDataJpaPostRepository.save(post);
+        return post.getId();
     }
 
-    public PostDto updatePost(long id, PostDto postDto){
+    public long  updatePost(long id, PostDto postDto){
         Post post = springDataJpaPostRepository.findById(id)
                 .orElseThrow(()-> new IllegalArgumentException("Threre is no post id: "+id));
         post.setTitle(postDto.getTitle());
         post.setContent(postDto.getContent());
         post.setUpdatedAt(post.getUpdatedAt());
-
-        Post updatedPost = springDataJpaPostRepository.save(post); // 디비에 저장
-        return new PostDto(updatedPost.getId(), updatedPost.getTitle(), updatedPost.getContent(),updatedPost.getCreatedAt(),updatedPost.getUpdatedAt()); // dto 형태로 반환
+        return id;
     }
 
-    public Optional<PostDto> deletePost(long id) {
-        return springDataJpaPostRepository.findById(id)
-                .map(op ->{
-                    springDataJpaPostRepository.deleteById(id);
-                    return new PostDto(op.getId(),op.getTitle(),op.getContent(),op.getCreatedAt(),op.getUpdatedAt());
-                });
+    public String deletePost(long id) {
+        Optional<Post> post = springDataJpaPostRepository.findById(id);
+        if(post.isEmpty()){
+            throw new IllegalStateException("없는 포스트..");
+        }
+        springDataJpaPostRepository.deleteById(id);
+        return "has been deleted";
     }
 }
 

@@ -1,9 +1,8 @@
 package com.example.demo.dto;
 
-import com.sun.istack.NotNull;
+import com.example.demo.entity.Post;
 import lombok.Builder;
 import lombok.Data;
-
 import javax.persistence.Column;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
@@ -12,8 +11,9 @@ import java.util.Date;
 
 
 @Data
+@Builder
 public class PostDto {
-    private  long id;
+    private  long  postId;
 
     @NotBlank(message = "The title cannot be consist of only blanks.")
     @Size(min=1,max=15,message = "The title must be at least 1 and no more than 15 characters.")
@@ -24,15 +24,19 @@ public class PostDto {
     @Size(min=1,max=1000,message = "The title must be at least 1 and no more than 1000 characters.")
     @Column(length=1000)
     private  String content;
+
     private Date createdAt;
     private Date updatedAt;
 
     @Builder
-    public PostDto (long id,String title, String content,Date createdAt, Date updatedAt){
-        this.id = id;
-        this.title=title;
-        this.content=content;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-    }
+    public static PostDto toDto(Post post){
+        return PostDto.builder()
+                .postId(post.getId())
+                .title(post.getTitle())
+                .content(post.getContent())
+                .createdAt(post.getCreatedAt())
+                .updatedAt(post.getUpdatedAt())
+                .build();
+
+}
 }
