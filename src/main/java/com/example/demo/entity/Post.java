@@ -31,15 +31,9 @@ public class Post  extends BaseEntity{
                 .content(postDto.getContent())
                 .build();
     }
-    public void update(String title, String content, String updatedAt){
+    public void update(String title, String content, Date updatedAt){
         this.title = title;
         this.content=content;
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        try {
-            super.setUpdatedAt( dateFormat.parse(updatedAt));
-        } catch (ParseException e) {
-            // 날짜 형식 파싱 오류 처리
-            e.printStackTrace();
-        }
+        super.setUpdatedAt( updatedAt);
     }
 }
